@@ -1,0 +1,80 @@
+---
+
+- name: Initial setup script for DeployHandler API server
+  hosts: apiservers
+  sudo: true
+  remote_user: root
+  tasks:
+    - name: Run the equivalent of "apt-get update" as a separate step
+      apt:
+        update_cache: yes
+
+    - name: Update all packages to the latest version
+      apt:
+        upgrade: dist
+
+    - name: Download repository for NodeJS 8.X
+      get_url:
+        url: https://deb.nodesource.com/setup_8.x
+        dest: /tmp
+
+    - name: Add repository for NodeJS 8.X
+      command: bash /tmp/setup_8.x  
+
+    - name: Install NodeJS 8.X
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Install build tools
+      apt:
+        name: build-essential
+        state: present
+
+    - name: Install Node Process Manager(PM2) globally
+      npm:
+        name: pm2
+        global: yes
+
+    - name: Add user that will run all Platform apps
+      user:
+        name: appsrunner
+        comment: "User that manages all apps with PM2"
+        shell: /bin/bash
+
+    - name: Setup PM2 to start on boot for Appsrunner user
+      command: env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u appsrunner --hp /home/appsrunner         
+
+    - name: Add SFTP Jail group
+      group:
+        name: sftponly
+        state: present
+
+    - name: Change SSH config to use SFTP Jail
+      copy:
+        src: files/sshd_config
+        dest: /etc/ssh/sshd_config
+        owner: root
+        group: root
+        mode: 0644
+        backup: yes
+        force: yes
+
+    - name: Restart SSH service
+      service:
+        name: sshd
+        state: restarted
+
+    - name: Clone DeployHandler API
+      git:
+        repo: https://bitbucket.org/aleksandarbabic/deployhandlerapi.git
+        dest: /root/deployhandlerapi
+
+    - name: Install Dependencies for DeployHandler API
+      shell: npm install
+      args:
+        chdir: /root/deployhandlerapi       
+
+
+                        
+
