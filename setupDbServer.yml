@@ -1,0 +1,72 @@
+---
+
+- name: Initial setup script for DeployHandler MongoDB server
+  hosts: dbservers
+  sudo: true
+  remote_user: root
+  tasks:
+
+    - name: Include OS-specific variables.
+      include_vars: "vars/{{ ansible_distribution }}.yml"
+
+    - name: Run the equivalent of "apt-get update" as a separate step
+      apt:
+        update_cache: yes
+
+    - name: Update all packages to the latest version
+      apt:
+        upgrade: dist
+
+    - name: Allow SSH in UFW
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Allow MongoDB in UFW
+      ufw:
+        rule: allow
+        port: 27017
+        proto: tcp
+
+    - name: Enable UFW firewall
+      ufw:
+        state: enabled
+
+    - name: Add repository key for MongoDB
+      apt_key:
+        id: EA312927
+        url: "http://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0xEA312927"
+        state: present
+    
+    - name: Add MongoDB apt source
+      apt_repository: 
+        repo: 'deb http://repo.mongodb.org/apt/ubuntu {{ansible_distribution_release}}/mongodb-org/3.2 multiverse' 
+        state: present 
+    
+    - name: Install MongoDB server
+      apt:
+        name: mongodb-org-server
+        state: installed
+
+    - name: Allow MongoDB to listen on all interfaces
+      replace:
+        dest: /etc/mongod.conf
+        regexp: '127.0.0.1'
+        replace: '0.0.0.0'
+        backup: yes
+
+    - name: Restart MongoDB server
+      service: name=mongod state=restarted    
+
+    - name: Copy mongod unit file when using Ubuntu Xenial
+      template:
+        src: "files/mongod.service.{{ ansible_distribution_release }}.j2"
+        dest: "/etc/systemd/system/mongod.service"
+        owner: root
+        group: root
+        mode: 0644
+      when: ansible_distribution_release == 'xenial'
+
+    - name: Ensure MongoDB is started and set to run on startup.
+      service: name=mongod state=started enabled=yes      
+        
