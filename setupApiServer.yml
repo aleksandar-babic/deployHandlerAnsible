@@ -36,6 +36,11 @@
         name: pm2
         global: yes
 
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present    
+
     - name: Add user that will run all Platform apps
       user:
         name: appsrunner
