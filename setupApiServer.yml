@@ -86,7 +86,15 @@
     - name: Install Dependencies for DeployHandler API
       shell: npm install
       args:
-        chdir: /root/deployhandlerapi       
+        chdir: /root/deployhandlerapi
+
+    - name: Start API with load balancing 2 workers
+      shell: pm2 start /root/deployhandlerapi/server.js -i 2 --name deployHandlerApi
+
+    - name: Save PM2 state
+      shell: pm2 save
+
+                   
 
 
                         

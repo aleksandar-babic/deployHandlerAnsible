@@ -1,0 +1,77 @@
+---
+
+- name: Initial setup script for DeployHandler API server
+  hosts: feservers
+  sudo: true
+  remote_user: root
+  tasks:
+    - name: Run the equivalent of "apt-get update" as a separate step
+      apt:
+        update_cache: yes
+
+    - name: Update all packages to the latest version
+      apt:
+        upgrade: dist
+
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+
+    - name: Copy NGINX config with GZIP support
+      copy:
+        src: files/nginx.conf
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: 0644
+        backup: yes
+        force: yes    
+
+    - name: Copy deployhandler.com NGINX vhost
+      copy:
+        src: files/deployhandler.com
+        dest: /etc/nginx/sites-available/deployhandler.com
+        owner: root
+        group: root
+        mode: 0644
+        backup: yes
+        force: yes
+
+    - name: Create symlink for deployhandler.com NGINX vhost
+      file: src=/etc/nginx/sites-available/deployhandler.com dest=/etc/nginx/sites-enabled/deployhandler.com state=link
+
+    - name: Create webroot directory
+      file:
+        path: /var/www/deployhandler
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: 0775          
+
+    - name: Allow SSH in UFW
+      ufw:
+        rule: allow
+        name: OpenSSH
+    
+    - name: Allow HTTP and HTTPS in UFW
+      ufw:
+        rule: allow
+        name: Nginx Full
+        
+    - name: Enable UFW firewall
+      ufw:
+        state: enabled
+
+    - name: Ensure NGINX is started and set to run on startup.
+      service: name=nginx state=started enabled=yes    
+
+    
+                
+           
+
+    
+
+
+                        
+
