@@ -39,7 +39,15 @@
     - name: Install NGINX
       apt:
         name: nginx
-        state: present    
+        state: present
+
+    - name: Copy NGINX Reverse Proxy template
+      copy:
+        src: files/template
+        dest: /etc/nginx/sites-available
+        owner: root
+        group: root
+        mode: 0644        
 
     - name: Add user that will run all Platform apps
       user:
