@@ -2,8 +2,10 @@
 
 - name: Initial setup script for DeployHandler API server
   hosts: apiservers
-  sudo: true
-  remote_user: root
+  remote_user: aleksandar
+  become: yes
+  become_user: root
+  become_method: sudo
   tasks:
     - name: Run the equivalent of "apt-get update" as a separate step
       apt:
@@ -12,6 +14,25 @@
     - name: Update all packages to the latest version
       apt:
         upgrade: dist
+
+    - name: Allow SSH in UFW
+      ufw:
+        rule: allow
+        name: OpenSSH
+    
+    - name: Allow HTTP in UFW
+      ufw:
+        rule: allow
+        port: 80
+
+    - name: Allow HTTPS in UFW
+      ufw:
+        rule: allow
+        port: 443    
+        
+    - name: Enable UFW firewall
+      ufw:
+        state: enabled        
 
     - name: Download repository for NodeJS 8.X
       get_url:
@@ -84,16 +105,19 @@
         dest: /root/deployhandlerapi
 
     - name: Install Dependencies for DeployHandler API
-      shell: npm install
+      shell: npm install --unsafe-perm
       args:
         chdir: /root/deployhandlerapi
+  
+    - name: Install forever (Node daemon)
+      shell: npm install --g forever
 
-    - name: Start API with load balancing 2 workers
-      shell: pm2 start /root/deployhandlerapi/server.js -i 2 --name deployHandlerApi
+    - name: Install forever-service to daemonize API
+      shell: npm install --g forever-service
 
-    - name: Save PM2 state
-      shell: pm2 save
-
+    - name: Create deployHandler API service
+      shell: forever-service install deployhandler --script /root/deployhandlerapi/server.js   
+  
                    
 
 

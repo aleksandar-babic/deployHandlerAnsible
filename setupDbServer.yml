@@ -1,9 +1,11 @@
 ---
 
 - name: Initial setup script for DeployHandler MongoDB server
-  hosts: dbservers
-  sudo: true
-  remote_user: root
+  hosts: apiservers
+  remote_user: aleksandar
+  become: yes
+  become_user: root
+  become_method: sudo
   tasks:
 
     - name: Include OS-specific variables.

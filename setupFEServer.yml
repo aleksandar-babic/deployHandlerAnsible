@@ -2,8 +2,10 @@
 
 - name: Initial setup script for DeployHandler API server
   hosts: feservers
-  sudo: true
-  remote_user: root
+  remote_user: aleksandar
+  become: yes
+  become_user: root
+  become_method: sudo
   tasks:
     - name: Run the equivalent of "apt-get update" as a separate step
       apt:
@@ -41,6 +43,9 @@
     - name: Create symlink for deployhandler.com NGINX vhost
       file: src=/etc/nginx/sites-available/deployhandler.com dest=/etc/nginx/sites-enabled/deployhandler.com state=link
 
+    - name: Restart NGINX for new configuration changes.
+      service: name=nginx state=restarted     
+
     - name: Create webroot directory
       file:
         path: /var/www/deployhandler
@@ -54,10 +59,15 @@
         rule: allow
         name: OpenSSH
     
-    - name: Allow HTTP and HTTPS in UFW
+    - name: Allow HTTP in UFW
       ufw:
         rule: allow
-        name: Nginx Full
+        port: 80
+
+    - name: Allow HTTPS in UFW
+      ufw:
+        rule: allow
+        port: 443    
         
     - name: Enable UFW firewall
       ufw:
